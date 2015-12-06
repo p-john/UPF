@@ -1,0 +1,25 @@
+# UPF
+Unified Packet Filter - Master Thesis Project
+
+What is this about?
+
+UPF is a tool written in C++11 for optimizing packet filter rule sets for 
+4 different packet filter engines (iptables, pf, ipfw, ipf) and includes 5 
+different optimizations (decision-tree based optimizations among other) 
+along with several parameters to tweak the actual result.
+The optimizations can result in significant performance improvements and don't
+require any changes to the underlying engines whatsoever.
+
+As this is an experimental build, bugs and some minor issues are to be expected
+and I can not guarantee UPF to work with every obscure engine specific feature
+such as connection tracking. Instead UPF ignores the processing of rules it can 
+not identify, so in the current state UPF sticks to basic filtering rules.
+
+UPF also supports synthetic ClassBench rule sets as input and is used by me for
+scientific evaluation of the aforementioned optimization's effectiveness.
+
+Along the UPF source, there are also several Python scripts in the evaluation folder
+for my evaluation test bench, as well as a Simulator that reads a UPF internal format file 
+as well as automatically generated packet traces to determine the matching rules
+for each packet in the trace.
+
