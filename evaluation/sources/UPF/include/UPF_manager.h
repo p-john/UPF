@@ -149,6 +149,7 @@ private:
     void saxpac_hypersplit(const SAXPAC& opt, Statistic& stats);
     void saxpac_hypersplit_mt(const SAXPAC& opt, Statistic& stats);
     void saxpac(const SAXPAC& opt, Statistic& stats);
+    void saxpac_mt(const SAXPAC& opt, Statistic& stats);
     void split_transformable();
 
     uint64_t current_threads_;

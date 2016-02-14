@@ -240,7 +240,7 @@ public:
         ruleset.add_rule(std::move(std::unique_ptr<UPF_Rule>(rule3->clone())));
         ruleset.add_rule(std::move(std::unique_ptr<UPF_Rule>(rule4->clone())));
 
-        ruleset.remove_redundancy_mt();
+        ruleset.remove_redundancy_mt(1);
 
         CHECK(ruleset.size() == 4);
         CHECK((ruleset.get_rule(0)) == (*rule1));

@@ -248,9 +248,6 @@ void UPF_Manager::split_transformable(){
 
 void UPF_Manager::optimize_simple(const Simple_Redundancy& opt, Statistic& stats){
 
-    if(!opt.complete_transform_)
-      split_transformable();
-
       if(opt.threading_)
         simple_redundancy_removal_mt(opt,stats);
       else
@@ -289,7 +286,7 @@ void UPF_Manager::optimize_saxpac(const SAXPAC& opt, Statistic& stats){
       if(opt.hypersplit_)
         saxpac_hypersplit_mt(opt,stats);
       else
-        saxpac(opt,stats);
+        saxpac_mt(opt,stats);
     }
     else{
       if(opt.hypersplit_)

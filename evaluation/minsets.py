@@ -2,7 +2,6 @@ import os, argparse, random, sys, copy
 from cb_generate import generate_cb_file, generate_trace_file
 from test_rulesets import test_hypersplit,test_original
 from simulate_rulesets import simulate_hypersplit, simulate_original
-from evaluation import aggregate_test_data, aggregate_sim_data
 from save_state import StateObject
 import multiprocessing
 

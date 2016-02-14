@@ -5,18 +5,23 @@ from save_state import StateObject
 import multiprocessing
 
 def start(seed_dir):
-    for i in range(1,11):
-        p = multiprocessing.Process(target=simulate_rulesets,args=(seed_dir,"count_"+str(i)))
+    for i in range(0,10):
+        p = multiprocessing.Process(target=simulate_rulesets,args=(seed_dir,"count_"+str(i),i))
         p.start()
 
 
-def simulate_rulesets(seed_dir,output_dir):
+def simulate_rulesets(seed_dir,output_dir,cnt):
     seeds = os.listdir(seed_dir)
-    rule_size = list(range(200, 10001, 200))
-    block_sizes = list(range(50,501,50))
-    opts = ["simple_redundancy", "fdd_redundancy",
-            "firewall_compressor", "saxpac", "hypersplit"]
-    binths = ["2", "4", "8", "16", "32"]
+    #seeds.remove("ipc1_seed")
+    #seeds.remove("fw1_seed")
+    rule_size = list(range(250, 5001, 250))
+   #block_sizes = list(range(50,501,50))
+    block_sizes = [500]
+    #opts = ["simple_redundancy", "fdd_redundancy",
+    #        "firewall_compressor", "saxpac", "hypersplit"]
+    opts = ["hypersplit","firewall_compressor","fdd_and_hyp"]
+    #binths = ["2", "4", "8", "16", "32"]
+    binths = ["4"]
     complete = ["", "--complete_transform"]
     use_hypersplit = ["", "--use_hypersplit"]
     count = list(range(0,10))
@@ -27,7 +32,7 @@ def simulate_rulesets(seed_dir,output_dir):
                 "complete" : 0,
                 # "count" : 0,
                 "block_sizes" : 0}
-    save_file = os.path.join("simulate_rulesets",output_dir,"simulate_rulesets.sav")
+    save_file = os.path.join("simulate_combined_results",output_dir,"simulate_rulesets.sav")
     sav = StateObject(save_file,states) # Loads old states if available
     state_loaded = False
 
@@ -36,7 +41,7 @@ def simulate_rulesets(seed_dir,output_dir):
             continue
         seed_file = os.path.join(seed_dir,seed)
         seed_name = os.path.basename(seed).split('_')[0]
-        output = os.path.join("simulate_rulesets",output_dir,seed_name)
+        output = os.path.join("simulate_combined_results",output_dir,seed_name)
         if not os.path.exists(output):
             os.makedirs(output)
 
@@ -49,7 +54,7 @@ def simulate_rulesets(seed_dir,output_dir):
             # Generate ClassBench file
 
             set_name = os.path.basename(seed_file).split('_')[0]
-            random_seed = random.randint(0, sys.maxsize)
+            random_seed = cnt
             cb_file = os.path.join(output,(set_name + "_" + str(num_rules)))
             cb_filepath = generate_cb_file(seed_file, num_rules, 1, 0,
                                                0, random_seed, cb_file)
@@ -84,6 +89,14 @@ def simulate_rulesets(seed_dir,output_dir):
                         for binth in binths:
                             simulate_hypersplit(output,cb_filepath,trace_filepath,
                                                 block, binth, complete)
+                    elif opt == "fwc_and_hyp":
+                        for binth in binths:
+                            simulate_fwc_and_hyp(output, cb_filepath,trace_filepath,
+                                      block, binth, complete)
+                    elif opt == "fdd_and_hyp":
+                        for binth in binths:
+                            simulate_fdd_and_hyp(output, cb_filepath,trace_filepath,
+                                      block, binth, complete)
                     sav.update_state({"opts" : id_o})
                 sav.update_state({"block_sizes" : id_b})
             simulate_original(output,cb_filepath,trace_filepath)
@@ -109,7 +122,7 @@ def simulate_original(output,cb_filepath, trace_filepath):
 
 def simulate_simple_redundancy(output, cb_filepath, trace_filepath, block_size, complete):
     set_name = os.path.basename(cb_filepath)
-    output_dir = os.path.join(output, "simple_redundancy",)
+    output_dir = os.path.join(output, "simple_redundancy")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     output_file = os.path.join(output_dir, (set_name + "_dump_simple_redundancy_" + "block_" + str(block_size)))
@@ -124,7 +137,7 @@ def simulate_simple_redundancy(output, cb_filepath, trace_filepath, block_size, 
 
 def simulate_fdd_redundancy(output, cb_filepath, trace_filepath, block_size, complete):
     set_name = os.path.basename(cb_filepath)
-    output_dir = os.path.join(output, "fdd_redundancy",)
+    output_dir = os.path.join(output, "fdd_redundancy")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     output_file = os.path.join(output_dir, (set_name + "_dump_fdd_redundancy_" + "block_" + str(block_size)))
@@ -139,7 +152,7 @@ def simulate_fdd_redundancy(output, cb_filepath, trace_filepath, block_size, com
 
 def simulate_fw_compressor(output, cb_filepath, trace_filepath, block_size, complete):
     set_name = os.path.basename(cb_filepath)
-    output_dir = os.path.join(output, "firewall_compressor",)
+    output_dir = os.path.join(output, "firewall_compressor")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     output_file = os.path.join(output_dir, (set_name + "_dump_firewall_compressor_" + "block_" + str(block_size)))
@@ -154,7 +167,7 @@ def simulate_fw_compressor(output, cb_filepath, trace_filepath, block_size, comp
 
 def simulate_hypersplit(output, cb_filepath, trace_filepath, block_size, binth, complete):
     set_name = os.path.basename(cb_filepath)
-    output_dir = os.path.join(output, "hypersplit",)
+    output_dir = os.path.join(output, "hypersplit")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     output_file = os.path.join(output_dir, (set_name + "_dump_hypersplit_" + "block_" + str(block_size) + "_binth_" + str(binth)))
@@ -169,12 +182,44 @@ def simulate_hypersplit(output, cb_filepath, trace_filepath, block_size, binth, 
 
 def simulate_saxpac(output, cb_filepath, trace_filepath, block_size, switch, complete):
     set_name = os.path.basename(cb_filepath)
-    output_dir = os.path.join(output, "saxpac",)
+    output_dir = os.path.join(output, "saxpac")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     output_file = os.path.join(output_dir, (set_name + "_dump_saxpac_" + "block_" + str(block_size)))
     cmd = "./UPF -i " + cb_filepath + " -cb -o " + output_file + " -dump" +\
 		  " -optimize " + "saxpac " + "--block_size " + \
+		str(block_size)
+    print(cmd)
+    subprocess.call(cmd, shell=True)
+    simulate_dump(output_file, trace_filepath, output_dir)
+    # os.system("mv " + output_file + "_stats " + os.path.join(output_dir))
+    os.unlink(output_file)
+
+def simulate_fwc_and_hyp(output, cb_filepath, trace_filepath, block_size, binth, complete):
+    set_name = os.path.basename(cb_filepath)
+    output_dir = os.path.join(output, "fwc_and_hyp")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_file = os.path.join(output_dir, (set_name + "_dump_fwc_and_hyp_" + "block_" + str(block_size) + "_binth_" + str(binth)))
+    cmd = "./UPF -i " + cb_filepath + " -cb -o " + output_file + " -dump" +\
+		  " -optimize " "firewall_compressor" + " --block_size " + \
+		str(block_size) + " hypersplit " + " --binth " + str(binth) +" --block_size " + \
+		str(block_size)
+    print(cmd)
+    subprocess.call(cmd, shell=True)
+    simulate_dump(output_file, trace_filepath, output_dir)
+    # os.system("mv " + output_file + "_stats " + os.path.join(output_dir))
+    os.unlink(output_file)
+
+def simulate_fdd_and_hyp(output, cb_filepath, trace_filepath, block_size, binth, complete):
+    set_name = os.path.basename(cb_filepath)
+    output_dir = os.path.join(output, "fdd_and_hyp")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_file = os.path.join(output_dir, (set_name + "_dump_fdd_and_hyp_" + "block_" + str(block_size) + "_binth_" + str(binth)))
+    cmd = "./UPF -i " + cb_filepath + " -cb -o " + output_file + " -dump" +\
+		  " -optimize " "fdd_redundancy" + " --block_size " + \
+		str(block_size) + " hypersplit " + " --binth " + str(binth) +" --block_size " + \
 		str(block_size)
     print(cmd)
     subprocess.call(cmd, shell=True)

@@ -3,7 +3,7 @@ from scapy.all import *
 from scapy.layers.inet import IP, TCP, UDP, ICMP, GRE
 import time
 from multiprocessing import Process
-
+ 
 def deploy_and_test(ruleset, trace_file, engine, output_dir):
     print("Testing Ruleset: " + os.path.basename(ruleset))
 

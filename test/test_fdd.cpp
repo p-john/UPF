@@ -106,8 +106,8 @@ public:
         rset->add_rule(std::move(std::unique_ptr<UPF_Rule>(rule5->clone())));
         rset->add_rule(std::move(std::unique_ptr<UPF_Rule>(rule6->clone())));
 
-        FDD fdd;
-        std::cout << *fdd.create_fdd(*rset);
+        //FDD fdd;
+        //std::cout << *fdd.create_fdd(*rset);
 
 
 

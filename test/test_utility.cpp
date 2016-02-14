@@ -20,7 +20,8 @@ public:
         REGISTER_TEST(test_port_to_range);
         REGISTER_TEST(test_icmp_to_range);
         REGISTER_TEST(test_int_to_ipv4);
-        REGISTER_TEST(test_range_to_ipv4_range_score);
+        REGISTER_TEST(test_range_to_ipv4_range_score_pf);
+        REGISTER_TEST(test_range_to_ipv4_range_score_iptables);
         REGISTER_TEST(test_range_to_ipv4_range_colon);
         REGISTER_TEST(test_range_to_ipv4_range_cidr);
         REGISTER_TEST(test_range_to_port_score);
@@ -33,6 +34,7 @@ public:
         REGISTER_TEST(test_l4_prot_wildcard);
         REGISTER_TEST(test_range_to_cidr_list);
 //        REGISTER_TEST(test_generate);
+
     }
 
     static const base_test::TestResult* test_validateIPv4(){
@@ -231,7 +233,21 @@ public:
 
     }
 
-    static const base_test::TestResult* test_range_to_ipv4_range_score(){
+    static const base_test::TestResult* test_range_to_ipv4_range_score_pf(){
+
+        using namespace Utility;
+
+        Range rng(102812812,132812812);
+
+        std::string ip = "6.32.204.140 - 7.234.144.12";
+
+        CHECK(range_to_ipv4_range_score_pf(rng) == ip);
+
+        return TEST_OK;
+
+    }
+
+    static const base_test::TestResult* test_range_to_ipv4_range_score_iptables(){
 
         using namespace Utility;
 
@@ -239,13 +255,11 @@ public:
 
         std::string ip = "6.32.204.140-7.234.144.12";
 
-        CHECK(range_to_ipv4_range_score(rng) == ip);
+        CHECK(range_to_ipv4_range_score_iptables(rng) == ip);
 
         return TEST_OK;
 
     }
-
-
    static const base_test::TestResult* test_range_to_ipv4_range_colon(){
 
         using namespace Utility;
@@ -265,7 +279,6 @@ public:
         using namespace Utility;
 
         Range rng(102812812,102812815);
-
         std::string ip = "6.32.204.140/30";
 
         CHECK(range_to_ipv4_range_cidr(rng) == ip);
@@ -436,7 +449,7 @@ static const base_test::TestResult* test_range_to_cidr_list(){
         results.push_back(CIDR(ipv4_to_int("192.13.7.192"),27));
         results.push_back(CIDR(ipv4_to_int("192.13.7.224"),29));
 
-
+        Range rng5(4294967296,uint128_t::max());
         std::vector<CIDR> cidr_list = ipv4_range_to_cidr_list(rng);
 //        for (unsigned int i = 0; i < cidr_list.size(); ++i)
 //          std::cout << int_to_ipv4(cidr_list[i].addr_) << "/" <<  cidr_list[i].mask_ << std::endl;
@@ -452,5 +465,15 @@ static const base_test::TestResult* test_range_to_cidr_list(){
         return TEST_OK;
 
     }
+
+//    static const base_test::TestResult* test_brute_force(){
+//    using namespace Utility;
+//    for (uint32_t i = 0; i < std::numeric_limits<uint32_t>::max() ;++i){
+//      for (uint32_t j = 0; j < std::numeric_limits<uint32_t>::max() ;++j){
+//        Range rng(i,j);
+//        std::cout << i << " - " << j  << std::endl;
+//        ipv4_range_to_cidr_list(rng);
+//      }
+
 };
 }

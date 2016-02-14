@@ -251,7 +251,16 @@ std::string Utility::int_to_ipv4(const uint64_t ip){
     return ss.str();
 }
 
-std::string Utility::range_to_ipv4_range_score(const Range& range){
+std::string Utility::range_to_ipv4_range_score_iptables(const Range& range){
+    uint32_t lower_limit = range.lower_.get_low();
+    uint32_t upper_limit = range.upper_.get_low();
+    std::stringstream ss;
+    ss << Utility::int_to_ipv4(lower_limit) << "-" <<
+    Utility::int_to_ipv4(upper_limit);
+    return ss.str();
+}
+
+std::string Utility::range_to_ipv4_range_score_pf(const Range& range){
     uint32_t lower_limit = range.lower_.get_low();
     uint32_t upper_limit = range.upper_.get_low();
     std::stringstream ss;
@@ -259,6 +268,7 @@ std::string Utility::range_to_ipv4_range_score(const Range& range){
     Utility::int_to_ipv4(upper_limit);
     return ss.str();
 }
+
 
 std::string Utility::range_to_ipv4_range_colon(const Range& range){
     uint32_t lower_limit = range.lower_.get_low();
@@ -398,17 +408,23 @@ std::vector<Utility::CIDR> Utility::ipv4_range_to_cidr_list(const Range& range){
   uint32_t low = range.lower_.get_low();
   uint32_t high = range.upper_.get_low();
   uint64_t current = low;
-//  std::cout << range << std::endl;
+   //std::cout << range << std::endl;
+
+  if(range.upper_.get_low() >= 4294967295){
+     cidr_list.push_back(CIDR(0,0));
+     return cidr_list;
+  }
 
   while(current < high){
+//    std::cout << current << std::endl;
     for(unsigned int i = 0; i < 32; ++i){
       Range cidr_low = cidr_to_range(current, 32-(i+1));
       if(cidr_to_range(current,32-(i+1)).lower_ >= low &&
          cidr_to_range(current,32-(i+1)).upper_ <= high){
-//        std::cout << i << std::endl;
+        //std::cout << cidr_to_range(current,32-(i+1)).upper_ << std::endl;
         continue;
       }
-      else if(cidr_to_range(current,32-(i+1)).upper_ > high && i != 0){
+      else if(cidr_to_range(current,32-(i+1)).upper_ >= high && i != 0){
         cidr_list.push_back(CIDR(current,32-(i)));
         current = cidr_to_range(current,32-(i)).upper_.get_low() + 1;
         break;

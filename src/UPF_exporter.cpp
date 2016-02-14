@@ -60,7 +60,7 @@ void IPTables_Exporter::
                 stream << "-s " << range_to_ipv4_range_cidr(l3_s) << " ";
               else if (!l3_s.is_wildcard()){
                 stream << "-m iprange --src-range " <<
-              range_to_ipv4_range_score(l3_s) << " ";
+              range_to_ipv4_range_score_iptables(l3_s) << " ";
               }
             }
           if(current_rule.get_field(l3_dst) != nullptr){
@@ -69,7 +69,7 @@ void IPTables_Exporter::
               stream << "-d " << range_to_ipv4_range_cidr(l3_d) << " ";
             else if(!l3_d.is_wildcard()){
               stream << "-m iprange --dst-range " <<
-              range_to_ipv4_range_score(l3_d) << " ";
+              range_to_ipv4_range_score_iptables(l3_d) << " ";
             }
           }
           if(current_rule.get_field(l4_src) != nullptr){
@@ -153,9 +153,10 @@ void ipfw_Exporter::upf_export(
     int table_count_dst = 0;
     for (unsigned int k = 0; k < rulesets.size(); ++k){
       UPF_Ruleset* ruleset = rulesets[k].get();
+      std::cout << "Ruleset " << k << " of " << rulesets.size() << std::endl;
       for (unsigned int i = 0; i < ruleset->size(); ++i){
         ++rule_count;
-//        std::cout << i << std::endl;
+//         std::cout << i << std::endl;
 //        std::string rule_number = zeropad(rule_count);
         // if Freerule then build ipfw rule
         const UPF_Rule& current_rule  = ruleset->get_rule(i);
@@ -348,7 +349,7 @@ void pf_Exporter::
                         if(!range_to_ipv4_range_cidr(l3_s).empty())
                           stream << "from " << range_to_ipv4_range_cidr(l3_s) << " ";
                         else if (!l3_s.is_wildcard())
-                          stream << "from hash/" << range_to_ipv4_range_score(l3_s) <<" ";
+                          stream << "from " << range_to_ipv4_range_score_pf(l3_s) <<" ";
                         else
                           stream << "from any ";
                     }
@@ -366,7 +367,7 @@ void pf_Exporter::
                         if(!range_to_ipv4_range_cidr(l3_d).empty())
                             stream << "to " << range_to_ipv4_range_cidr(l3_d) << " ";
                         else if(!l3_d.is_wildcard())
-                            stream << "to " << range_to_ipv4_range_score(l3_d) <<" ";
+                            stream << "to " << range_to_ipv4_range_score_pf(l3_d) <<" ";
                         else
                           stream << "to any ";
                     }

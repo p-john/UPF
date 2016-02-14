@@ -123,95 +123,95 @@ void UPF_Ruleset::split_and_remove_redundancy(){
         this->append(rulesets[i]);
     }
 }
-
-void UPF_Ruleset::split_and_remove_redundancy_mt(Statistic& stats){
-
-    uint64_t count_before = ruleset_.size();
-    auto start = std::chrono::system_clock::now();
-
-   // Create Free and Legacy Subsets
-    std::vector<std::shared_ptr<UPF_Ruleset>> rulesets;
-    std::shared_ptr<UPF_Ruleset> new_set(new UPF_Ruleset());
-
-    bool free_mode = false;
-    for (auto iter = ruleset_.begin(); iter != ruleset_.end(); ++iter){
-        if ((*iter)->get_type() == freerule && free_mode == false){
-            if (new_set->size() > 0)
-                rulesets.push_back(std::move(new_set));
-            new_set = std::shared_ptr<UPF_Ruleset>(new UPF_Ruleset());
-            new_set->set_type(freeset);
-            free_mode = true;
-            new_set->clear();
-            new_set->add_rule(std::move(*iter));
-        }
-        else if((*iter)->get_type() == freerule && free_mode == true){
-            new_set->add_rule(std::move(*iter));
-        }
-        else if ((*iter)->get_type() == legacyrule && free_mode == true){
-            if(new_set->size() > 0)
-                rulesets.push_back(std::move(new_set));
-            new_set = std::shared_ptr<UPF_Ruleset>(new UPF_Ruleset());
-            new_set->set_type(legacyset);
-            free_mode = false;
-            new_set->clear();
-            new_set->add_rule(std::move(*iter));
-        }
-        else if((*iter)->get_type() == legacyrule && free_mode == false)
-            new_set->add_rule(std::move(*iter));
-    }
-    if(free_mode == true)
-        rulesets.push_back(std::move(new_set));
-    else
-        rulesets.push_back(std::move(new_set));
-
-    // Remove redundancy in freesets individually
-    std::vector<std::thread*> threads;
-    for (auto iter = rulesets.begin(); iter != rulesets.end(); ++iter){
-
-        //create new thread for every subset
-        if ((*iter)->get_type() == freeset)
-            threads.push_back(new std::thread(&UPF_Ruleset::remove_redundancy_mt,
-                                              (*iter)));
-    }
-
-    // wait for all threads to complete processing
-    for (unsigned int i  = 0; i < threads.size() ; ++i){
-        threads[i]->join();
-        delete(threads[i]);
-    }
-
-    // Remerge Free and Legecy sets into one set
-    ruleset_.clear();
-
-    for (unsigned int i = 0; i < rulesets.size(); ++i){
-        this->append(rulesets[i]);
-    }
-
-    auto end = std::chrono::system_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
-    uint64_t difference = count_before - ruleset_.size();
-    Statistic::Entry cnt_bef("Total Number of rules",
-      std::to_string(count_before));
-    Statistic::Entry cnt_aft_abs("Absolute redundant rules removed",
-      std::to_string(difference));
-    Statistic::Entry cnt_aft_rel("Relative redundant rules removed (in %)",
-      std::to_string(100 - (ruleset_.size()*100 / count_before)));
-    Statistic::Entry proc_time("Time for optimization (in ms) ",
-      std::to_string(elapsed.count()));
-    stats.add_stat(cnt_bef);
-    stats.add_stat(cnt_aft_abs);
-    stats.add_stat(cnt_aft_rel);
-    stats.add_stat(proc_time);
-    if(count_before){
-        std::cout << "Rules before removal: " << std::endl << count_before <<
-        std::endl << "Rules after removal: " <<  std::endl << ruleset_.size() <<
-        std::endl << "Redundant rules removed: " << std::endl << difference <<
-        " (" << 100 - (ruleset_.size()*100 / count_before) << "%)"
-        << std::endl;
-    }
-    std::cout << "Time for optimization: " << std:: endl <<
-    elapsed.count() << "ms" << std::endl;
-}
+//
+//void UPF_Ruleset::split_and_remove_redundancy_mt(Statistic& stats){
+//
+//    uint64_t count_before = ruleset_.size();
+//    auto start = std::chrono::system_clock::now();
+//
+//   // Create Free and Legacy Subsets
+//    std::vector<std::shared_ptr<UPF_Ruleset>> rulesets;
+//    std::shared_ptr<UPF_Ruleset> new_set(new UPF_Ruleset());
+//
+//    bool free_mode = false;
+//    for (auto iter = ruleset_.begin(); iter != ruleset_.end(); ++iter){
+//        if ((*iter)->get_type() == freerule && free_mode == false){
+//            if (new_set->size() > 0)
+//                rulesets.push_back(std::move(new_set));
+//            new_set = std::shared_ptr<UPF_Ruleset>(new UPF_Ruleset());
+//            new_set->set_type(freeset);
+//            free_mode = true;
+//            new_set->clear();
+//            new_set->add_rule(std::move(*iter));
+//        }
+//        else if((*iter)->get_type() == freerule && free_mode == true){
+//            new_set->add_rule(std::move(*iter));
+//        }
+//        else if ((*iter)->get_type() == legacyrule && free_mode == true){
+//            if(new_set->size() > 0)
+//                rulesets.push_back(std::move(new_set));
+//            new_set = std::shared_ptr<UPF_Ruleset>(new UPF_Ruleset());
+//            new_set->set_type(legacyset);
+//            free_mode = false;
+//            new_set->clear();
+//            new_set->add_rule(std::move(*iter));
+//        }
+//        else if((*iter)->get_type() == legacyrule && free_mode == false)
+//            new_set->add_rule(std::move(*iter));
+//    }
+//    if(free_mode == true)
+//        rulesets.push_back(std::move(new_set));
+//    else
+//        rulesets.push_back(std::move(new_set));
+//
+//    // Remove redundancy in freesets individually
+//    std::vector<std::thread*> threads;
+//    for (auto iter = rulesets.begin(); iter != rulesets.end(); ++iter){
+//
+//        //create new thread for every subset
+//        if ((*iter)->get_type() == freeset)
+//            threads.push_back(new std::thread(&UPF_Ruleset::remove_redundancy_mt,
+//                                              (*iter)));
+//    }
+//
+//    // wait for all threads to complete processing
+//    for (unsigned int i  = 0; i < threads.size() ; ++i){
+//        threads[i]->join();
+//        delete(threads[i]);
+//    }
+//
+//    // Remerge Free and Legecy sets into one set
+//    ruleset_.clear();
+//
+//    for (unsigned int i = 0; i < rulesets.size(); ++i){
+//        this->append(rulesets[i]);
+//    }
+//
+//    auto end = std::chrono::system_clock::now();
+//    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+//    uint64_t difference = count_before - ruleset_.size();
+//    Statistic::Entry cnt_bef("Total Number of rules",
+//      std::to_string(count_before));
+//    Statistic::Entry cnt_aft_abs("Absolute redundant rules removed",
+//      std::to_string(difference));
+//    Statistic::Entry cnt_aft_rel("Relative redundant rules removed (in %)",
+//      std::to_string(100 - (ruleset_.size()*100 / count_before)));
+//    Statistic::Entry proc_time("Time for optimization (in ms) ",
+//      std::to_string(elapsed.count()));
+//    stats.add_stat(cnt_bef);
+//    stats.add_stat(cnt_aft_abs);
+//    stats.add_stat(cnt_aft_rel);
+//    stats.add_stat(proc_time);
+//    if(count_before){
+//        std::cout << "Rules before removal: " << std::endl << count_before <<
+//        std::endl << "Rules after removal: " <<  std::endl << ruleset_.size() <<
+//        std::endl << "Redundant rules removed: " << std::endl << difference <<
+//        " (" << 100 - (ruleset_.size()*100 / count_before) << "%)"
+//        << std::endl;
+//    }
+//    std::cout << "Time for optimization: " << std:: endl <<
+//    elapsed.count() << "ms" << std::endl;
+//}
 
 void UPF_Ruleset::append(std::shared_ptr<UPF_Ruleset> ruleset){
     for (unsigned int i = 0; i < ruleset->size(); ++i)
@@ -357,9 +357,8 @@ void UPF_Ruleset::remove_forward_thread (unsigned int thread_id,
     }
 }
 
-void UPF_Ruleset::remove_redundancy_mt(){
+void UPF_Ruleset::remove_redundancy_mt(unsigned int number_threads){
 
-    auto number_threads = std::thread::hardware_concurrency();
     std::vector<std::thread*> threads;
     PositionVector pos;
     for (unsigned int i = 1; i <= number_threads; ++i){

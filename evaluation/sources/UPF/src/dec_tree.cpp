@@ -64,9 +64,9 @@ uint128_t dec_tree::find_best_cut(const UPF_Ruleset& ruleset,
 
     switch(cutting_type){
 //      // Standard Equi-distant HiCuts
-//      case equi_dist:{
-//        return equal_distant(dim, box);
-//      }
+      case equi_dist:{
+        return equal_distant(dim, box);
+      }
       // Equal-Sized Segments
       case equi_seg:{
           std::vector<uint128_t> endpoints;
@@ -169,26 +169,28 @@ void dec_tree::collect_endpoints_in_box(const UPF_Ruleset& ruleset,
 
 
 
-//uint128_t dec_tree::equal_distant(const DimensionType dim,
-//                                  const Bounding_Box& box){
-//
-//    uint128_t cut_position = box.get_upper_bound(dim);
-//    uint128_t diff = box.get_upper_bound(dim) - box.get_lower_bound(dim);
-//    diff.downshift(1);
-//    if(diff == uint128_t::min())
-//      diff = 1;
-//    std::cout << cut_position << std::endl;
-//    cut_position = box.get_upper_bound(dim)  - diff;
+uint128_t dec_tree::equal_distant(const DimensionType dim,
+                                  const Bounding_Box& box){
+
+    uint128_t cut_position = box.get_upper_bound(dim);
+    uint128_t diff = box.get_upper_bound(dim) - box.get_lower_bound(dim);
+    diff.downshift(1);
+    if(diff == uint128_t::min())
+      diff = 1;
+    cut_position = box.get_upper_bound(dim)  - diff;
+//    std::cout << "Dimension : " << dimensiontype_to_string(dim) << "Box Upper Bound : "
+//    << box.get_upper_bound(dim) << "New Cut: " << cut_position << std::endl;
+
 //    std::cout << "new: " << cut_position << std::endl;
-//    return cut_position;
+    return cut_position;
+
+//  uint128_t cut_position(endpoints.back());
 //
-////  uint128_t cut_position(endpoints.back());
-////
-////  cut_position.downshift(1);
-////
-////  return cut_position;
+//  cut_position.downshift(1);
 //
-//}
+//  return cut_position;
+
+}
 
 // Equal Segments heuristic
 

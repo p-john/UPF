@@ -80,7 +80,7 @@ int main(int argc, char* argv[]){
                       complete_transform = true;
                     else if(strcmp(argv[j],"--multithreaded") == 0){
                       threading = true;
-                      if (std::string(argv[j+1]).find_first_not_of("012345679")
+                      if (std::string(argv[j+1]).find_first_not_of("0123456789")
                           == std::string::npos){
                             cores = atoi(argv[++j]);
                         }

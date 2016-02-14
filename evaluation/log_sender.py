@@ -215,9 +215,9 @@ def log_hypersplit(output, cb_filepath, trace_filepath, engine, block_size,
 
 seed = args.seed
 output_dir = args.output
-cb_file = os.path.join(os.path.basename(seed)[0] + "_100")
-cb_filepath = generate_cb_file(seed,100,1,0,0,5,cb_file)
-trace_filepath = generate_trace_file(cb_filepath,1,100)
+cb_file = os.path.join(os.path.basename(seed)[0] + "_1000")
+cb_filepath = generate_cb_file(seed,1000,1,0,0,5,cb_file)
+trace_filepath = generate_trace_file(cb_filepath,1,100000)
 engines = ["iptables","pf","ipfw","ipf"]
 opts = ["simple_redundancy","fdd_redundancy","firewall_compressor","hypersplit","saxpac"]
 binth = "4"

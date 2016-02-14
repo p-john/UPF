@@ -1,0 +1,64 @@
+--------------------------------------------------------------------------------
+-------------Evaluation of Rule Set Optimizations for Achieving-----------------
+----------------------High-Performance Software-based---------------------------
+---------------------------Packet Classification--------------------------------
+--------------------------------------------------------------------------------
+
+This folder includes the tools and python script files used for the evaluation.
+Due to the wide range of different tests and test setups, the
+.py files contain only loosely connected functions.
+Some files, such as deploy_and_test.py, needed to be specifically customized on 
+each sender to fit certain constraints, such as network interfaces, MAC or 
+IP addresses. Other files need to be customized for the individual test runs.
+Thus, these files are not supposed to be runnable out-of-the-box.
+Furthermore, some functions rely on the external libraries Scapy and Numpy.
+It is also assumed that tcpreplay is installed on the sending machine as well as
+the tools found in the "sources" dir. Use "make" to compile the tools.
+
+The tools include: 
+
+Unified Packet Filter		-		Tool for Rule Set Transformation
+db_generator						-		ClassBench Rule Set Generator
+trace_generator					-		ClassBench Header Trace Generator
+
+Files used in all Tests:
+
+cb_generate.py
+save_state.py
+
+Files used for Processing Time and Rule Set Size:
+
+proctime_rulesets.py
+
+Files used for the Simulation: 
+
+simulate_rulesets.py
+simulate_combined.py
+UPF_Simulator.py
+packet_func.py
+
+Files used for the Jump Tests:
+
+deploy_and_test.py
+test_jumpsets.py
+
+Files used for the Packet Throughput Tests:
+
+deploy_and_test.py
+test_rulesets.py
+
+Files used for Validation of Transformation Correctness:
+
+log_sender.py
+log_receiver.py
+
+Files used for the Combining Optimizations test:
+
+simulate_combined.py
+ipfw_table_count.py
+test_rulesets.py
+
+Files used for processing the results of the tests:
+
+plotting.py
+

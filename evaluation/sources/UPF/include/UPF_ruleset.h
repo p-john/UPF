@@ -32,7 +32,7 @@ public:
     void split_and_remove_redundancy();
     void split_and_remove_redundancy_mt(Statistic& stats);
     void remove_redundancy();
-    void remove_redundancy_mt();
+    void remove_redundancy_mt(unsigned int threads);
     void remove_backward_thread(unsigned int thread_id,
                                   unsigned int threads,
                                   PositionVector& pos);

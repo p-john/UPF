@@ -132,8 +132,7 @@ void get_most_distinct_rules(Node* current_node,
 void get_most_distinct_endpoints(Node* current_node,
                              std::vector<Distinct>& endpoints);
 
-uint128_t equal_distant(const std::vector<uint128_t>& endpoints,
-                        const DimensionType dim,
+uint128_t equal_distant(const DimensionType dim,
                         const Bounding_Box& box);
 
 uint128_t equal_segments(const std::vector<uint128_t>& endpoints,

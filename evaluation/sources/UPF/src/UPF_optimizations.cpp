@@ -378,11 +378,13 @@ void UPF_Manager::optimize_fdd(const FDD_Redundancy& opt, Statistic& stats){
         merge_sets.push_back(merge_set);
         std::vector<std::shared_ptr<UPF_Ruleset>> split_sets(
           RulesetSplitter::equal_split(*rulesets_[i], opt.block_size_));
-        for(unsigned int j = 0; j < split_sets.size(); ++j)
+        for(unsigned int j = 0; j < split_sets.size(); ++j){
+          std::cout << "Split set : " << j << " - " << split_sets[j]->size() << std::endl;
           remove_with_fdd_single(std::move(split_sets[j]), *merge_set);
-        for (auto merge_set : merge_sets)
-          temp_sets.push_back(std::unique_ptr<UPF_Ruleset>(merge_set));
+        }
       }
+      for (auto merge_set : merge_sets)
+        temp_sets.push_back(std::unique_ptr<UPF_Ruleset>(merge_set));
       replace_rulesets(temp_sets);
       stats.add_stat(Statistic::Entry("Total Rules After",
                                       std::to_string(total_rules())));
@@ -839,6 +841,70 @@ void UPF_Manager::saxpac(const SAXPAC& opt, Statistic& stats){
     stats.add_stat(Statistic::Entry("Processing Time", std::to_string(elapsed.count())));
 }
 
+void UPF_Manager::saxpac_mt(const SAXPAC& opt, Statistic& stats){
+
+      typedef std::vector<std::unique_ptr<UPF_Ruleset>>* Collect_Ptr;
+      typedef std::vector<std::unique_ptr<UPF_Ruleset>> RulesetVec;
+      typedef std::vector<std::shared_ptr<UPF_Ruleset>> SplitSetVec;
+
+      auto start = std::chrono::system_clock::now();
+
+      RulesetVec temp_sets;
+      std::vector<Collect_Ptr> collect_sets;
+      SplitSetVec split_sets;
+      stats.add_stat(Statistic::Entry("Total Rules Before",
+                                    std::to_string(total_rules())));;
+      for(unsigned int i = 0; i < rulesets_.size();++i){
+        if(rulesets_[i]->transformable() && rulesets_[i]->size() > 1){
+          SplitSetVec curr_sets(RulesetSplitter::saxpac_split(*rulesets_[i],
+                                                            opt.threshold_));
+          split_sets.insert(split_sets.end(),
+                          std::make_move_iterator(curr_sets.begin()),
+                          std::make_move_iterator(curr_sets.end()));
+        }
+        else{
+          std::shared_ptr<UPF_Ruleset> new_ptr(new UPF_Ruleset(std::move(*rulesets_[i])));
+          split_sets.push_back(std::move(new_ptr));
+        }
+      }
+      for(uint64_t j = 0; j < split_sets.size(); ++j){
+        const std::string& curr_set_name = split_sets[j]->get_name();
+        std::string next_set = split_sets.back()->get_name();
+        if (j < split_sets.size() - 1)
+          next_set = split_sets[j+1]->get_name();
+        Collect_Ptr collect_set_ptr(new RulesetVec());
+        collect_sets.push_back(collect_set_ptr);
+        if(curr_set_name.find("FP") != std::string::npos||
+           curr_set_name.find("FR") != std::string::npos){
+          for(uint64_t k = j; k < split_sets.size(); ++k){
+            next_set = split_sets[k]->get_name();
+            if(next_set.find("FR") == std::string::npos &&
+               next_set.find("FP") == std::string::npos)
+                break;
+          }
+        }
+        if(j < split_sets.size() - 1){
+          std::unique_ptr<UPF_Rule> new_jump_rule(new UPF_Rule());
+          new_jump_rule->set_action(Jump(next_set));
+          split_sets[j]->add_rule(std::move(new_jump_rule));
+        }
+        std::unique_ptr<UPF_Ruleset> new_ptr(new UPF_Ruleset(std::move(*split_sets[j])));
+        collect_set_ptr->push_back(std::move(new_ptr));
+      }
+      for(auto& set_vec : collect_sets){
+        for(auto iter = set_vec->begin(); iter != set_vec->end(); ++iter)
+          temp_sets.push_back(std::move(*iter));
+        delete(set_vec);
+      }
+      replace_rulesets(temp_sets);
+    stats.add_stat(Statistic::Entry("Total Rules After",
+                                    std::to_string(total_rules())));;
+    auto end = std::chrono::system_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+    std::cout << "Processing Time (in ms) " << elapsed.count() << std::endl;
+    stats.add_stat(Statistic::Entry("Processing Time", std::to_string(elapsed.count())));
+}
+
 void fw_compress_threaded(UPF_Manager& manager,
                           UPF_Ruleset& ruleset,
                           UPF_Ruleset& merge_set){
@@ -915,17 +981,22 @@ void UPF_Manager::simple_redundancy_removal(const Simple_Redundancy& opt, Statis
   std::vector<std::unique_ptr<UPF_Ruleset>> temp_sets;
   stats.add_stat(Statistic::Entry("Total Rules Before",
                                   std::to_string(total_rules())));
+  std::vector<UPF_Ruleset*> merge_sets;
   auto start = std::chrono::system_clock::now();
   for(unsigned int i = 0; i < rulesets_.size(); ++i){
-
+    UPF_Ruleset* merge_set = new UPF_Ruleset(rulesets_[i]->get_name(),freeset);
+    merge_sets.push_back(merge_set);
     std::vector<std::shared_ptr<UPF_Ruleset>> split_sets(
       RulesetSplitter::equal_split(*rulesets_[i], opt.block_size_));
     for(unsigned int j = 0; j < split_sets.size(); ++j){
       split_sets[j]->remove_redundancy();
-      temp_sets.push_back(std::unique_ptr<UPF_Ruleset>(
-        new UPF_Ruleset(std::move(*split_sets[j]))));
+      merge_set->append(*split_sets[j]);
     }
   }
+  std::unique_ptr<UPF_Ruleset> merged_set(new UPF_Ruleset(rulesets_[0]->get_name(), freeset));
+  for (auto merge_set : merge_sets)
+      merged_set->append(*merge_set);
+  temp_sets.push_back(std::move(merged_set));
   auto end = std::chrono::system_clock::now();
   auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
   std::cout << "Processing Time (in ms) " << elapsed.count() << std::endl;
@@ -941,16 +1012,22 @@ void UPF_Manager::simple_redundancy_removal_mt(const Simple_Redundancy& opt, Sta
   std::vector<std::unique_ptr<UPF_Ruleset>> temp_sets;
   stats.add_stat(Statistic::Entry("Total Rules Before",
                                   std::to_string(total_rules())));
+  std::vector<UPF_Ruleset*> merge_sets;
   auto start = std::chrono::system_clock::now();
   for(unsigned int i = 0; i < rulesets_.size(); ++i){
-     std::vector<std::shared_ptr<UPF_Ruleset>> split_sets(
+      UPF_Ruleset* merge_set = new UPF_Ruleset(rulesets_[i]->get_name(),freeset);
+      merge_sets.push_back(merge_set);
+      std::vector<std::shared_ptr<UPF_Ruleset>> split_sets(
       RulesetSplitter::equal_split(*rulesets_[i], opt.block_size_));
     for(unsigned int j = 0; j < split_sets.size(); ++j){
-      split_sets[j]->remove_redundancy_mt();
-      temp_sets.push_back(std::unique_ptr<UPF_Ruleset>(
-        new UPF_Ruleset(std::move(*split_sets[j]))));
+      split_sets[j]->remove_redundancy_mt(this->cores_);
+      merge_set->append(*split_sets[j]);
     }
     }
+    std::unique_ptr<UPF_Ruleset> merged_set(new UPF_Ruleset(rulesets_[0]->get_name(), freeset));
+    for (auto merge_set : merge_sets)
+      merged_set->append(*merge_set);
+    temp_sets.push_back(std::move(merged_set));
     auto end = std::chrono::system_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
     std::cout << "Processing Time (in ms) " << elapsed.count() << std::endl;

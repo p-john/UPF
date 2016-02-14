@@ -43,7 +43,8 @@ Range port_wildcard();
 Range l4_prot_wildcard();
 
 std::string int_to_ipv4 (const uint64_t ip_integer);
-std::string range_to_ipv4_range_score(const Range& range);
+std::string range_to_ipv4_range_score_iptables(const Range& range);
+std::string range_to_ipv4_range_score_pf(const Range& range);
 std::string range_to_ipv4_range_colon(const Range& range);
 std::string range_to_ipv4_range_cidr(const Range& range);
 std::string range_to_port_score(const Range& range);
