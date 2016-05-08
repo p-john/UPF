@@ -22,6 +22,7 @@ int main(int argc, char* argv[]){
     bool threading = false;
     uint16_t cores = 1;
     bool enable_log = false;
+    bool use_inline = false;
 
     // Check for valid arguments
 
@@ -176,6 +177,8 @@ int main(int argc, char* argv[]){
                         binth = atoi(argv[++j]);
                     else if(strcmp(argv[j],"--block_size") == 0)
                         block_size = atoi(argv[++j]);
+                    else if(strcmp(argv[j],"--inline") == 0)
+                        use_inline = true;
                    else if(strcmp(argv[j],"--multithreaded") == 0){
                       threading = true;
                       if (std::string(argv[j+1]).find_first_not_of("0123456789")
@@ -188,8 +191,8 @@ int main(int argc, char* argv[]){
                     i=j;
                   }
                   opts.push_back(Opt(new Hypersplit(cutting_type,binth,
-                                                    block_size,
-                                                    complete_transform, threading)));
+                                                    block_size, complete_transform,
+                                                    threading, use_inline)));
                 }
                 else if(strcmp(argv[i],"saxpac")== 0){
                   for (int j = i+1; j < argc; ++j){

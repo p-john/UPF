@@ -1,11 +1,11 @@
 # UPF
-Unified Packet Filter - Master Thesis Project
+Unified Packet Filter - Diploma Thesis Project
 
 What is this about?
 
 UPF is a tool written in C++11 for optimizing packet filter rule sets for 
 4 different packet filter engines (iptables, pf, ipfw, ipf) and includes 5 
-different optimizations (decision-tree based optimizations among other) 
+different optimizations (Two Redundancy Removals, Firewall Compressor, HyperSplit and SAXPAC) 
 along with several parameters to tweak the actual result.
 The optimizations can result in significant performance improvements and don't
 require any changes to the underlying engines whatsoever.

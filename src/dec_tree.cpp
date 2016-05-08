@@ -1,5 +1,6 @@
 #include "dec_tree.h"
 #include <random>
+#include <stack>
 //
 //bool field_independent1(const UPF_Rule& lhs, const UPF_Rule& rhs,
 //                           DimensionType field_key){
@@ -142,21 +143,37 @@ void dec_tree::collect_endpoints_in_box(const UPF_Ruleset& ruleset,
     if(ruleset.get_rule(i).get_field(dim) != nullptr){
       const Range& current_range = ruleset.get_rule(i).get_field(dim)->get_range();
     if(current_range.lower_ > box.get_lower_bound(dim) &&
-       current_range.lower_ <= box.get_upper_bound(dim)){
-      endpoints.push_back(current_range.lower_);
-    }
-    else if(current_range.lower_ >= box.get_lower_bound(dim) &&
        current_range.lower_ < box.get_upper_bound(dim)){
       endpoints.push_back(current_range.lower_);
     }
-    if(current_range.upper_ > box.get_lower_bound(dim) &&
-       current_range.upper_ <= box.get_upper_bound(dim)){
-      endpoints.push_back(current_range.upper_);
-    }
-    else if(current_range.upper_ >= box.get_lower_bound(dim) &&
+//    else if(current_range.lower_ >= box.get_lower_bound(dim) &&
+//       current_range.lower_ < box.get_upper_bound(dim)){
+//      endpoints.push_back(current_range.lower_);
+//    }
+    else if(current_range.upper_ > box.get_lower_bound(dim) &&
        current_range.upper_ < box.get_upper_bound(dim)){
       endpoints.push_back(current_range.upper_);
     }
+//    else if(current_range.upper_ >= box.get_lower_bound(dim) &&
+//       current_range.upper_ < box.get_upper_bound(dim)){
+//      endpoints.push_back(current_range.upper_);
+//    }
+//    if(current_range.lower_ > box.get_lower_bound(dim) &&
+//       current_range.lower_ <= box.get_upper_bound(dim)){
+//      endpoints.push_back(current_range.lower_);
+//    }
+//    else if(current_range.lower_ >= box.get_lower_bound(dim) &&
+//       current_range.lower_ < box.get_upper_bound(dim)){
+//      endpoints.push_back(current_range.lower_);
+//    }
+//    if(current_range.upper_ > box.get_lower_bound(dim) &&
+//       current_range.upper_ <= box.get_upper_bound(dim)){
+//      endpoints.push_back(current_range.upper_);
+//    }
+//    else if(current_range.upper_ >= box.get_lower_bound(dim) &&
+//       current_range.upper_ < box.get_upper_bound(dim)){
+//      endpoints.push_back(current_range.upper_);
+//    }
   }
   }
   std::sort(endpoints.begin(), endpoints.end(),
@@ -416,6 +433,7 @@ dec_tree::DimCut dec_tree::determine_best_dimcut(Node* current_node,
 
   if(distincts[0].distinct_number_ == 0){
     distincts.clear();
+//    std::cout << "Take Endpoints" << std::endl;
     get_most_distinct_endpoints(current_node,distincts);
     std::sort(distincts.begin(), distincts.end(),
         [](const Distinct& a, const Distinct& b) -> bool{
@@ -428,6 +446,8 @@ dec_tree::DimCut dec_tree::determine_best_dimcut(Node* current_node,
           best_distincts.push_back(distincts[i]);
   }
   unsigned int random_index = rand() % best_distincts.size();
+//  std::cout << "Best Distincts Size: " << best_distincts.size() << std::endl;
+//  std::cout << "Random Index" << random_index << std::endl;
   DimensionType best_dim = best_distincts[random_index].dim_;
   uint128_t best_cut = find_best_cut(current_ruleset, current_box,
                                      best_dim, cutting_type);
@@ -455,8 +475,10 @@ void dec_tree::duplicate_intersected_rules(
     if(same_prot){
       if(curr_rule.get_field(best_dim) != nullptr && !curr_rule.has_unknown_match()){
         const Range& curr_range = curr_rule.get_field(best_dim)->get_range();
-        if(curr_range.intersect(range))
+        if(curr_range.intersect(range)){
           target_ruleset.add_rule(std::unique_ptr<UPF_Rule>(curr_rule.clone()));
+         // std::cout << curr_rule << std::endl;
+        }
       }
       else
         target_ruleset.add_rule(std::unique_ptr<UPF_Rule>(curr_rule.clone()));
@@ -594,16 +616,84 @@ void three_node_hypersplit(dec_tree::Node* current_node,
 
 }
 
+void two_node_hypersplit(dec_tree::Node* current_node,
+                           std::queue<dec_tree::Node*>& nodes_to_process,
+                           unsigned int& number_nodes,
+                           const CuttingType cutting_type){
+
+
+
+
+  using namespace dec_tree;
+ // Determine best cut
+  DimCut best_dimcut = determine_best_dimcut(current_node,cutting_type );
+  DimensionType best_dim = best_dimcut.dim_;
+  uint128_t best_cut = best_dimcut.cut_position_;
+//std::cout << "Best Dimcut: " << dimensiontype_to_string(best_dimcut.dim_) << " " << best_dimcut.cut_position_ << std::endl;
+  // Duplicate every intersected rule in respective child nodes
+  UPF_Ruleset left_child_ruleset, right_child_ruleset;
+  uint128_t low_bound = current_node->get_box().get_lower_bound(best_dim);
+  uint128_t high_bound = current_node->get_box().get_upper_bound(best_dim);
+
+//  if(low_bound == best_cut-1)
+//    low_bound = best_cut;
+//  if(high_bound == best_cut+1)
+//    high_bound = best_cut;
+  const UPF_Ruleset& current_ruleset = current_node->get_ruleset();
+  const Range left_range = Range(low_bound,best_cut);
+  //const Range middle_range = Range(best_cut, best_cut);
+  const Range right_range = Range(best_cut+1,high_bound);
+
+
+//  std::cout << current_ruleset.size() << std::endl;
+//  if(current_ruleset.size() <= 4)
+//    std::cout << current_ruleset << std::endl;
+  if(best_cut >= low_bound){
+    duplicate_intersected_rules(current_ruleset, left_range,
+                              best_dim, left_child_ruleset);
+  }
+  if(best_cut <= high_bound){
+    duplicate_intersected_rules(current_ruleset, right_range,
+                                best_dim, right_child_ruleset);
+}
+//  duplicate_intersected_rules(current_ruleset, middle_range,
+//                              best_dim, middle_child_ruleset);
+//  Bounding_Box middle_box(current_node->get_box());
+//  middle_box.set_range(best_dim, middle_range);
+  current_node->get_ruleset().clear();
+//  build_child_node(current_node, middle_child_ruleset, middle_box,
+//                   best_dim, nodes_to_process, number_nodes);
+  if(best_cut >= low_bound){
+//          std::cout << "left child: " << std::endl << left_child_ruleset << std::endl;
+    Bounding_Box left_box(current_node->get_box());
+    left_box.set_range(best_dim,left_range);
+    build_child_node(current_node, left_child_ruleset, left_box,
+            best_dim, nodes_to_process, number_nodes);
+
+
+  }
+  if(best_cut <= high_bound){
+//    std::cout << "right child: " << std::endl << right_child_ruleset << std::endl;
+    Bounding_Box right_box(current_node->get_box());
+    right_box.set_range(best_dim,right_range);
+    build_child_node(current_node, right_child_ruleset, right_box,
+                    best_dim, nodes_to_process, number_nodes);
+  }
+
+}
+
+
 void dec_tree::process_node(Node* current_node,
                             const CuttingType cutting_type,
                             std::queue<Node*>& nodes_to_process,
                             unsigned int& number_nodes){
 //
 //  if(cutting_type == equi_dist)
-//    two_node_hicut(current_node, nodes_to_process, number_nodes);
+    two_node_hypersplit(current_node, nodes_to_process, number_nodes,
+                        cutting_type);
 //  else
-    three_node_hypersplit(current_node, nodes_to_process, number_nodes,
-                          cutting_type);
+//    three_node_hypersplit(current_node, nodes_to_process, number_nodes,
+//                          cutting_type);
 
 }
 
@@ -652,7 +742,11 @@ void dec_tree::Node::collect_rulesets(
   std::vector<std::unique_ptr<UPF_Ruleset>>& collection){
 
     std::queue<Node*> nodes_to_collect;
-    nodes_to_collect.push(this);
+    for(unsigned int i = 0; i < this->child_nodes_.size(); ++i)
+          nodes_to_collect.push(std::move(this->child_nodes_[i]).get());
+    std::unique_ptr<UPF_Ruleset> new_set(
+        new UPF_Ruleset(std::move(this->get_ruleset())));
+    collection.push_back(std::move(new_set));
     unsigned int max_rules = 0;
     unsigned int max_non_jump_rules = 0;
     unsigned int count_non_jump_rules = 0;
@@ -675,6 +769,94 @@ void dec_tree::Node::collect_rulesets(
       nodes_to_collect.pop();
     }
 }
+
+void dec_tree::Node::collect_rulesets_inline(
+  std::vector<std::unique_ptr<UPF_Ruleset>>& collection){
+
+    std::stack<Node*> nodes_to_collect;
+    for(unsigned int i = 0; i < this->child_nodes_.size(); ++i)
+          nodes_to_collect.push(std::move(this->child_nodes_[i]).get());
+    std::unique_ptr<UPF_Ruleset> root_set(
+        new UPF_Ruleset(std::move(this->get_ruleset())));
+    collection.push_back(std::move(root_set));
+    UPF_Ruleset* new_set = new UPF_Ruleset(nodes_to_collect.top()->get_ruleset().get_name(),freeset);;
+    while(!nodes_to_collect.empty()){
+      Node* current_node = nodes_to_collect.top();
+//      std::cout << "TOP NODE ON STACK: " << nodes_to_collect.top()->get_name() << std::endl;
+      nodes_to_collect.pop();
+//      std::cout << "Processing Node : " << current_node->get_name() << std::endl;
+//      for(unsigned int i = 0; i < current_node->child_nodes_.size(); ++i){
+//        nodes_to_collect.push(std::move(current_node->child_nodes_[i]).get());
+//      }
+//      std::cout << "Child Size: " << current_node->child_nodes_.size() << std::endl;
+//      std::cout << "Subtree Size: " << current_node->depth() << std::endl;
+      UPF_Ruleset& current_ruleset = current_node->get_ruleset();
+      if(current_node->child_nodes_.size() == 1){
+         nodes_to_collect.push(std::move(current_node->child_nodes_[0]).get());
+         continue;
+      }
+      if(current_node->child_nodes_.size() > 1){
+//        std::cout << "Subtree Size: " << current_node->subtree_size() << std::endl;
+//        std::cout << "Left Child: " << current_node->child_nodes_[0]->subtree_size() << std::endl;
+//        std::cout << "Right child: " << current_node->child_nodes_[1]->subtree_size() << std::endl;
+        if(current_node->child_nodes_[0]->subtree_size() < current_node->child_nodes_[1]->subtree_size()){
+//          std::cout << "Inlining right child" << std::endl;
+          new_set->add_rule(std::move(std::unique_ptr<UPF_Rule>(current_ruleset.get_rule(0).clone())));
+          nodes_to_collect.push(std::move(current_node->child_nodes_[0]).get());
+          nodes_to_collect.push(std::move(current_node->child_nodes_[1]).get());
+          continue;
+        }
+        else{
+          new_set->add_rule(std::move(std::unique_ptr<UPF_Rule>(current_ruleset.get_rule(1).clone())));
+          nodes_to_collect.push(std::move(current_node->child_nodes_[1]).get());
+          nodes_to_collect.push(std::move(current_node->child_nodes_[0]).get());
+          continue;
+        }
+      }
+      if(current_node->child_nodes_.size() == 0){
+        new_set->append(current_ruleset);
+//        std::cout << "EMITTING RULE SET: " << new_set->get_name() << std::endl;
+        collection.push_back(std::move(std::unique_ptr<UPF_Ruleset>(new_set)));
+        if(!nodes_to_collect.empty())
+          new_set = new UPF_Ruleset(nodes_to_collect.top()->get_ruleset().get_name(),freeset);
+      }
+    }
+ }
+
+//void dec_tree::Node::collect_rulesets_inline(
+//  std::vector<std::unique_ptr<UPF_Ruleset>>& collection){
+//
+//    std::stack<Node*> nodes_to_collect;
+//    for(unsigned int i = 0; i < this->child_nodes_.size(); ++i)
+//          nodes_to_collect.push(std::move(this->child_nodes_[i]).get());
+//    std::unique_ptr<UPF_Ruleset> root_set(
+//        new UPF_Ruleset(std::move(this->get_ruleset())));
+//    collection.push_back(std::move(root_set));
+//    UPF_Ruleset* new_set = new UPF_Ruleset(nodes_to_collect.top()->get_ruleset().get_name(),freeset);;
+//    while(!nodes_to_collect.empty()){
+//      Node* current_node = nodes_to_collect.top();
+////      std::cout << "TOP NODE ON STACK: " << nodes_to_collect.top()->get_name() << std::endl;
+//      nodes_to_collect.pop();
+////      std::cout << "Processing Node : " << current_node->get_name() << std::endl;
+//      for(unsigned int i = 0; i < current_node->child_nodes_.size(); ++i){
+//        nodes_to_collect.push(std::move(current_node->child_nodes_[i]).get());
+//      }
+////      std::cout << "Child Size: " << current_node->child_nodes_.size() << std::endl;
+////      std::cout << "Subtree Size: " << current_node->depth() << std::endl;
+//      UPF_Ruleset& current_ruleset = current_node->get_ruleset();
+//      if(current_node->child_nodes_.size() > 1){
+//          new_set->add_rule(std::move(std::unique_ptr<UPF_Rule>(current_ruleset.get_rule(0).clone())));
+//          continue;
+//      }
+//      else
+//        new_set->append(current_ruleset);
+////        std::cout << "EMITTING RULE SET: " << new_set->get_name() << std::endl;
+//        collection.push_back(std::move(std::unique_ptr<UPF_Ruleset>(new_set)));
+//        if(!nodes_to_collect.empty())
+//          new_set = new UPF_Ruleset(nodes_to_collect.top()->get_ruleset().get_name(),freeset);
+//      }
+//
+// }
 
 void dec_tree::Node::remove_redundancy_in_box(){
 
@@ -768,6 +950,17 @@ uint64_t dec_tree::Node::depth() const{
   }
 
   return max_depth + 1;
+}
+
+uint64_t dec_tree::Node::subtree_size(){
+
+  uint64_t num_nodes = num_childs() + 1;
+
+    for (auto iter = child_nodes_.begin(); iter != child_nodes_.end();  ++iter){
+      num_nodes = num_nodes + (*iter)->subtree_size();
+    }
+    return num_nodes;
+
 }
 
 dec_tree::Bounding_Box& dec_tree::Node::get_box() {return box_;}
@@ -867,8 +1060,12 @@ void dec_tree::DecisionTree::create_tree(const CuttingType cut_type,
 }
 
 void dec_tree::DecisionTree::collect_nodes(
-  std::vector<std::unique_ptr<UPF_Ruleset>>& collection){
-  root_node_.collect_rulesets(collection);
+  std::vector<std::unique_ptr<UPF_Ruleset>>& collection, bool use_inline=false){
+  if(use_inline)
+    root_node_.collect_rulesets_inline(collection);
+  else
+    root_node_.collect_rulesets(collection);
+
 }
 
 unsigned int dec_tree::Bounding_Box::num_dimensions() const{

@@ -53,14 +53,16 @@ public:
 class Hypersplit : public Optimization{
 public:
   Hypersplit(const CuttingType cut, const unsigned int binth,
-             const uint64_t block_size,
-             const bool complete, const bool threading)
+             const uint64_t block_size, const bool complete,
+             const bool threading, const bool use_inline)
     : Optimization(hypersplit, block_size, complete, threading),
       cutting_type_(cut),
-      binth_(binth){}
+      binth_(binth),
+      use_inline_(use_inline){}
 
   CuttingType cutting_type_;
   unsigned int binth_;
+  bool use_inline_;
 };
 
 class FirewallCompressor : public Optimization{

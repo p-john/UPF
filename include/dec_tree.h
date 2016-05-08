@@ -75,11 +75,14 @@ public:
     const std::string& get_name() const;
     UPF_Ruleset& get_ruleset();
     Bounding_Box& get_box();
+    unsigned int num_childs(){return num_childs_;}
+    uint64_t subtree_size();
 //    void replace_ruleset(const UPF_Ruleset& rhs);
     void split_protocols(std::queue<Node*>&, unsigned int& number_nodes);
     void remove_redundancy_in_box();
     void collect_rulesets(std::vector<std::unique_ptr<UPF_Ruleset>>&);
     void collect_rulesets(std::vector<UPF_Ruleset*>&);
+    void collect_rulesets_inline(std::vector<std::unique_ptr<UPF_Ruleset>>&);
     Node(UPF_Ruleset& ruleset);
     Node(UPF_Ruleset& ruleset, const std::string& tree_name);
     Node(UPF_Ruleset& ruleset, const std::string& name,
@@ -101,7 +104,8 @@ private:
 class DecisionTree{
 public:
   void create_tree(const CuttingType cutting_type, const unsigned int binth);
-  void collect_nodes(std::vector<std::unique_ptr<UPF_Ruleset>>& rulesets);
+  void collect_nodes(std::vector<std::unique_ptr<UPF_Ruleset>>& rulesets,
+                     bool use_inline);
   void collect_nodes(std::vector<UPF_Ruleset*>& rulesets);
   DecisionTree(UPF_Ruleset& ruleset, const std::string& name,
                const std::string& jump_ruleset);

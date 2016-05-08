@@ -361,11 +361,13 @@ void UPF_Manager::optimize(const std::vector<std::unique_ptr<Optimization>>& opt
     case OptimizeType::hypersplit:{
       Hypersplit* opti = static_cast<Hypersplit*>(opt.get());
       std::cout << "Optimization : Hypersplit" << std::endl;
+      if(opti->use_inline_)
+        std::cout << "Using Node Inlining " << std::endl;
       if(opti->threading_)
         std::cout << "Using " << cores_ << " Threads" << std::endl;
       if(opti->block_size_ < std::numeric_limits<uint64_t>::max())
-        std::cout << "Block Size =  " << opti->block_size_ <<  std::endl <<
-      "Cutting Type = " << cuttingtype_to_string(opti->cutting_type_) << std::endl <<
+        std::cout << "Block Size =  " << opti->block_size_ <<  std::endl;
+      std::cout << "Cutting Type = " << cuttingtype_to_string(opti->cutting_type_) << std::endl <<
       "Binth = " << opti->binth_ << std::endl;
       if (opti->complete_transform_)
         std::cout << "Complete Transformation (potentially very expensive!!!)" << std::endl;

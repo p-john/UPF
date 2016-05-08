@@ -450,14 +450,14 @@ void UPF_Manager::optimize_fdd_mt(const FDD_Redundancy& opt, Statistic& stats){
 void hypersplit_single(std::shared_ptr<UPF_Ruleset> ruleset,
                          const Hypersplit& opti,
                          const std::string& nset,
-                         std::vector<std::unique_ptr<UPF_Ruleset>>& collect_set){
-
+                         std::vector<std::unique_ptr<UPF_Ruleset>>& collect_set,
+                         bool use_inline){
 
     dec_tree::DecisionTree tree(*ruleset,ruleset->get_name(), nset);
     tree.create_tree(opti.cutting_type_, opti.binth_);
     std::vector<std::unique_ptr<UPF_Ruleset>> temp_set;
-    tree.collect_nodes(collect_set);
-
+    tree.collect_nodes(collect_set, use_inline);
+    tree.root_node_.depth();
 }
 
 
@@ -470,7 +470,7 @@ void hypersplit_threaded(UPF_Manager& manager, std::shared_ptr<UPF_Ruleset> rule
     dec_tree::DecisionTree tree(*ruleset,ruleset->get_name(), nset);
     tree.create_tree(opti.cutting_type_, opti.binth_);
     std::vector<std::unique_ptr<UPF_Ruleset>> temp_set;
-    tree.collect_nodes(collect_set);
+    tree.collect_nodes(collect_set, false);
     manager.close_thread();
 
 }
@@ -502,6 +502,8 @@ void UPF_Manager::hypersplit(const Hypersplit& opt, Statistic& stats){
 
       auto start = std::chrono::system_clock::now();
       using namespace dec_tree;
+      uint64_t max_depth = 0;
+      uint64_t temp_depth = 0;
       std::vector<Statistic*> stat_vec;
       std::vector<std::unique_ptr<UPF_Ruleset>> temp_sets;
       std::vector<std::vector<std::unique_ptr<UPF_Ruleset>>*> collect_sets;
@@ -514,7 +516,8 @@ void UPF_Manager::hypersplit(const Hypersplit& opt, Statistic& stats){
           next_nt_set = rulesets_[i+1]->get_name();
         else
           next_nt_set = "FINAL_SET";
-        if(rulesets_[i]->transformable()){
+//        if(rulesets_[i]->transformable()){
+          if(true){
           std::vector<std::shared_ptr<UPF_Ruleset>> split_sets(
             RulesetSplitter::equal_split(*rulesets_[i], opt.block_size_));
           for(uint64_t j = 0; j < split_sets.size(); ++j){
@@ -526,7 +529,10 @@ void UPF_Manager::hypersplit(const Hypersplit& opt, Statistic& stats){
               new std::vector<std::unique_ptr<UPF_Ruleset>>();
             collect_sets.push_back(collect_set_ptr);
             hypersplit_single(std::move(split_sets[j]),
-                                opt, next_set,*collect_set_ptr);
+                                opt, next_set,*collect_set_ptr,
+                                opt.use_inline_);
+            if(temp_depth > max_depth)
+              max_depth = temp_depth;
           }
         }
         else{
@@ -550,6 +556,7 @@ void UPF_Manager::hypersplit(const Hypersplit& opt, Statistic& stats){
       replace_rulesets(temp_sets);
     stats.add_stat(Statistic::Entry("Total Rules After",
                                     std::to_string(total_rules())));;
+//    stats.add_stat(Statistic::Entry("Max Depth", std::to_string(max_depth)));
     auto end = std::chrono::system_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
     std::cout << "Processing Time (in ms) " << elapsed.count() << std::endl;
@@ -594,7 +601,8 @@ void UPF_Manager::hypersplit_mt(const Hypersplit& opt, Statistic& stats){
             }
             else
               hypersplit_single(std::move(split_sets[j]),
-                                opt, next_set,*collect_set_ptr);
+                                opt, next_set,*collect_set_ptr,
+                                opt.use_inline_);
           }
         }
         else{

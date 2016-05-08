@@ -153,7 +153,7 @@ void ipfw_Exporter::upf_export(
     int table_count_dst = 0;
     for (unsigned int k = 0; k < rulesets.size(); ++k){
       UPF_Ruleset* ruleset = rulesets[k].get();
-      std::cout << "Ruleset " << k << " of " << rulesets.size() << std::endl;
+//      std::cout << "Ruleset " << k << " of " << rulesets.size() << std::endl;
       for (unsigned int i = 0; i < ruleset->size(); ++i){
         ++rule_count;
 //         std::cout << i << std::endl;
